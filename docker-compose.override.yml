@@ -4,11 +4,12 @@ services:
   sample.api:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=https://+:443;http://+:80
-      - ASPNETCORE_HTTPS_PORT=44393
+      - ASPNETCORE_URLS=http://+:80
+      - UseDb=true
+      #- ASPNETCORE_HTTPS_PORT=44395
     ports:
-      - "12725:80"
-      - "44393:443"
+      - "55123:80"
+      #- "44395:443"
     volumes:
       - ${APPDATA}/ASP.NET/Https:/root/.aspnet/https:ro
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
