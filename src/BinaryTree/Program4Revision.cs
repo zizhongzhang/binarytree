@@ -9,20 +9,20 @@ namespace BinaryTree.Program4Revision
     {
         static void Main(string[] args)
         {
-            {
-                ShuntingYardSimpleMath SY = new ShuntingYardSimpleMath();
-                String s = "true;|;(;true;&;false;)";
-                //String s = "true;|;true;&;false";
-                Console.WriteLine("input: {0}", s); Console.WriteLine();
-                List<String> ss = s.Split(';').ToList();
-                SY.DebugRPNSteps += new ShuntingYardBase<bool, string>.DebugRPNDelegate(SY_DebugRPNSteps);
-                SY.DebugResSteps += new ShuntingYardBase<bool, string>.DebugResDelegate(SY_DebugResSteps);
-                var res = SY.Execute(ss, null);
+            Console.WriteLine(0x2);
+            ShuntingYardSimpleBoolean SY = new ShuntingYardSimpleBoolean();
+            //String s = "true;|;(;true;&;false;)";
+            String s = "true;|;true;&;false";
+            Console.WriteLine("input: {0}", s); Console.WriteLine();
+            List<String> ss = s.Split(';').ToList();
+            SY.DebugRPNSteps += new ShuntingYardBase<bool, string>.DebugRPNDelegate(SY_DebugRPNSteps);
+            SY.DebugResSteps += new ShuntingYardBase<bool, string>.DebugResDelegate(SY_DebugResSteps);
+            var rpn = SY.GetPostfix(ss);
+            var res = SY.Execute(rpn);
 
-                bool ok = res;
-                Console.WriteLine("input: {0} = {1} {2}", s, res, (ok ? "Ok" : "Error"));
-                Console.ReadKey();
-            }
+            bool ok = res;
+            Console.WriteLine("input: {0} = {1} {2}", s, res, (ok ? "Ok" : "Error"));
+            Console.ReadKey();
         }
 
         static void SY_DebugRPNSteps(List<object> inter, List<char> opr)
@@ -76,13 +76,7 @@ namespace BinaryTree.Program4Revision
         public delegate void DebugResDelegate(List<object> res, List<TResult> var);
         public event DebugResDelegate DebugResSteps;
 
-        /// <summary>
-        /// Execute the input list
-        /// </summary>
-        /// <param name="InputList">List of ident and opr</param>
-        /// <param name="InputObj">alternative object to evaluate on</param>
-        /// <returns></returns>
-        public TResult Execute(List<TInput> InputList, object TagObj)
+        public IEnumerable<object> GetPostfix(List<TInput> InputList)
         {
             Stack<object> inter = new Stack<object>(); // output stack
             Stack<char> opr = new Stack<char>();    // operator stack
@@ -139,35 +133,41 @@ namespace BinaryTree.Program4Revision
                     if (!IsNoise(s))
                         throw new Exception("Unknowen token");
                 }
-                if (DebugRPNSteps != null)
-                    DebugRPNSteps(inter.Reverse().ToList(), opr.ToList());
+                DebugRPNSteps?.Invoke(inter.Reverse().ToList(), opr.ToList());
             }
 
             // put opr to out
             while (opr.Count > 0)
                 inter.Push(opr.Pop());
-            if (DebugRPNSteps != null)
-                DebugRPNSteps(inter.Reverse().ToList(), opr.ToList());
+            DebugRPNSteps?.Invoke(inter.Reverse().ToList(), opr.ToList());
 
-            Queue<object> res = new Queue<object>(inter.Reverse());
+            return inter.Reverse();
+        }
+        /// <summary>
+        /// Evaluate expression in postfix format
+        /// </summary>
+        /// <param name="postfix">RPN</param>
+        /// <returns></returns>
+        public TResult Execute(IEnumerable<object> postfix)
+        {
+            Queue<object> res = new Queue<object>(postfix);
+
             Stack<TResult> var = new Stack<TResult>(); // vars stack
-            if (DebugResSteps != null)
-                DebugResSteps(res.ToList(), var.ToList());
+            DebugResSteps?.Invoke(res.ToList(), var.ToList());
             // execute output stack
             while (res.Count > 0)
             {
                 object o = res.Dequeue();
                 if (o.GetType() == typeof(TInput))
                 {
-                    var.Push(TypecastIdentifier((TInput)o, TagObj));
+                    var.Push(TypecastIdentifier((TInput)o));
                 }
                 if (o.GetType() == typeof(char))
                 {
                     TResult r = var.Pop(); TResult l = var.Pop();
                     var.Push(Evaluate(l, (char)o, r));
                 }
-                if (DebugResSteps != null)
-                    DebugResSteps(res.ToList(), var.ToList());
+                DebugResSteps?.Invoke(res.ToList(), var.ToList());
             }
             return var.Peek(); // return result
         }
@@ -194,7 +194,7 @@ namespace BinaryTree.Program4Revision
         /// <param name="InputObj">Alt. object to evaluate on</param>
         /// <param name="input">Identifier to typecast</param>
         /// <returns></returns>
-        public abstract TResult TypecastIdentifier(TInput input, object TagObj);
+        public abstract TResult TypecastIdentifier(TInput input);
 
         /// <summary>
         /// Is input a identifier
@@ -236,7 +236,7 @@ namespace BinaryTree.Program4Revision
     /// <summary>
     /// Implementation of simpel math class
     /// </summary>
-    public class ShuntingYardSimpleMath : ShuntingYardBase<bool, string>
+    public class ShuntingYardSimpleBoolean : ShuntingYardBase<bool, string>
     {
         Dictionary<char, PrecedensAssociativity> Oprs = new Dictionary<char, PrecedensAssociativity>()
         {
@@ -256,7 +256,7 @@ namespace BinaryTree.Program4Revision
             throw new Exception("Wrong operator!!");
         }
 
-        public override bool TypecastIdentifier(string input, object TagObj)
+        public override bool TypecastIdentifier(string input)
         {
             bool result;
             if (bool.TryParse(input, out result))
