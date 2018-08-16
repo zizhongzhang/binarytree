@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,11 +8,16 @@ namespace sample.api.Controllers
     [ApiController]
     public class ValuesController : ControllerBase
     {
+        private readonly GithubClient _client;
+        public ValuesController(GithubClient githubClient)
+        {
+            _client = githubClient; 
+        }
         // GET api/values
         [HttpGet]
-        public ActionResult<IEnumerable<string>> Get()
+        public async Task<int> Get()
         {
-            return new string[] { "value1", "value2" };
+            return await _client.GetPageStatusCode(new Uri("https://google.com"));
         }
 
         // GET api/values/5

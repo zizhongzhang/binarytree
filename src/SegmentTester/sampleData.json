@@ -1,0 +1,57 @@
+﻿{
+  "sampleSignals": [
+    {
+      "key": "orgregion",
+      "values": [
+        "au",
+        "uk",
+        "us",
+        "sg"
+      ],
+      "type": "text"
+    },
+    {
+      "key": "industrytype",
+      "values": [
+        "retail",
+        "fashion",
+        "IT",
+        "construction",
+        "public sector",
+        "education",
+        "hospitality",
+        "accounting"
+      ],
+      "type": "text"
+    },
+    {
+      "key": "invoicePageView",
+      "values": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "type": "number"
+    },
+    {
+      "key": "payGst",
+      "values": [
+        "yes",
+        "no"
+      ],
+      "type": "text"
+    }
+  ],
+  "textOperators": [
+    "==",
+    "!="
+  ],
+  "numberOperators": [
+    ">=",
+    "==",
+    "<=",
+    "<",
+    ">"
+  ]
+}
