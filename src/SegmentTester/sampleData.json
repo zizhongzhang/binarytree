@@ -1,12 +1,39 @@
 ﻿{
   "sampleSignals": [
     {
-      "key": "orgregion",
+      "key": "region",
       "values": [
         "au",
         "uk",
         "us",
         "sg"
+      ],
+      "type": "text"
+    },
+    {
+      "key": "country",
+      "values": [
+        "Singapore",
+        "Hong",
+        "Kong",
+        "Philippines",
+        "Italy",
+        "Ireland",
+        "South",
+        "Africa",
+        "Canada",
+        "Japan"
+
+      ],
+      "type": "text"
+    },
+    {
+      "key": "Whatdoyoudo",
+      "values": [
+        "Sell Goods",
+        "Sell Services",
+        "Run a school",
+        "not for profit"
       ],
       "type": "text"
     },
@@ -39,6 +66,59 @@
       "values": [
         "yes",
         "no"
+      ],
+      "type": "text"
+    },
+    {
+      "key": "lifecycle",
+      "values": [
+        "visitor",
+        "user",
+        "organisation"
+      ],
+      "type": "text"
+    },
+    {
+      "key": "source",
+      "values": [
+        "xero.com",
+        "my.xero",
+        "GMX",
+        "HQ"
+      ],
+      "type": "text"
+    },
+    {
+      "key": "trialStatus",
+      "values": [
+        "trial",
+        "subscriber"
+      ],
+      "type": "text"
+    },
+    {
+      "key": "paymentproviders",
+      "values": [
+        "Stripe",
+        "Paypal"
+      ],
+      "type": "text"
+    },
+    {
+      "key": "bankproviders",
+      "values": [
+        "ANZ",
+        "CAB",
+        "NAB",
+        "None"
+      ],
+      "type": "text"
+    },
+    {
+      "key": "usertype",
+      "values": [
+        "partner",
+        "non-partner"
       ],
       "type": "text"
     }

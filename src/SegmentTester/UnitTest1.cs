@@ -23,7 +23,7 @@ namespace SegmentTester
         {
             var stopwatch = new Stopwatch();
             var signal = new Dictionary<string, string>();
-            signal.Add("orgregion", "au");
+            signal.Add("region", "au");
             signal.Add("payGst", "no");
             stopwatch.Start();
             var qualifiedAudiences = Validator.Qualify(signal, _audiences);
