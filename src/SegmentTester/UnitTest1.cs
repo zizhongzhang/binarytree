@@ -1,3 +1,4 @@
+using CodingSeb.ExpressionEvaluator;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -5,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace SegmentTester
@@ -12,31 +14,112 @@ namespace SegmentTester
     public class UnitTests : IClassFixture<TestSetup>
     {
         private readonly Audience[] _audiences;
+        private readonly string[] _operators;
+        private readonly string[] _booleanOperators;
+        private readonly IDictionary<string, string> _allSignals = new Dictionary<string, string>();
         public UnitTests(TestSetup setup)
         {
-            setup.CreateRandomAudience(10000, 3);
+            setup.CreateRandomAudience(100, 3);
             _audiences = setup.Audiences;
+            _operators = setup.Operators;
+            _booleanOperators = setup.BooleanOperators;
+            PopulateSignals(_allSignals);
+        }
+
+        private void PopulateSignals(IDictionary<string, string> signals)
+        {
+            signals.Add("region", "au");
+            signals.Add("country", "Italy");
+            signals.Add("Whatdoyoudo", "Sell Goods");
+            signals.Add("industrytype", "retail");
+            signals.Add("invoicePageView", "4");
+            signals.Add("payGst", "no");
+            signals.Add("lifecycle", "visitor");
+            signals.Add("source", "GMX");
+            signals.Add("trialStatus", "subscriber");
+            signals.Add("paymentproviders", "Paypal");
+            signals.Add("bankproviders", "ANZ");
+            signals.Add("usertype", "partner");
         }
 
         [Fact]
         public void Test1()
         {
             var stopwatch = new Stopwatch();
-            var signal = new Dictionary<string, string>();
-            signal.Add("region", "au");
-            signal.Add("payGst", "no");
+
             stopwatch.Start();
-            var qualifiedAudiences = Validator.Qualify(signal, _audiences);
+            var qualifiedAudiences = Validator.Qualify(_allSignals, _audiences, _booleanOperators, _operators);
             stopwatch.Stop();
             var milliSeconds = stopwatch.ElapsedMilliseconds;
-            var uniqueNames = qualifiedAudiences.Select(q => q.Name).Distinct().Count();
+
+
             //Console.WriteLine(milliSeconds);
+        }
+
+        [Theory]
+        [InlineData("country==singapore&&region!=au")]
+        [InlineData("country==singapore&&page_view>=3")]
+        [InlineData("country==singapore&&invoicePageView>=3||trialStatus!=trial")]
+        public void ParseExpressionBySplit(string expression)
+        {
+            var split1 = expression.Split(_booleanOperators, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var exp in split1)
+            {
+                var array = exp.Split(_operators, StringSplitOptions.RemoveEmptyEntries);
+                var key = array[0];
+                var value = array[1];
+                if (int.TryParse(value, out _))
+                {
+                    expression = expression.SafeReplace(key, _allSignals[key]);
+                }
+                else
+                {
+                    expression = expression.SafeReplace(value, "\"" + value + "\"");
+                    expression = expression.SafeReplace(key, "\"" + _allSignals[key] + "\"");
+                }
+            }
+            var evaluator = new ExpressionEvaluator();
+            Assert.True(evaluator.Evaluate<bool>(expression));
+
+        }
+
+        [Fact]
+        public void ParseExpressionByRegex()
+        {
+            var expression = "\"country\"==\"singapore\"&&\"region\"!=\"au\"";
+            var chars = _operators.SelectMany(o => o.ToCharArray()).ToArray();
+            var split1 = expression.Split(_booleanOperators, StringSplitOptions.RemoveEmptyEntries);
+            var regex = new Regex(@"\w+");
+            var keys = split1.Select(exp => regex.Match(exp).Value);
+            var signals = new Dictionary<string, string>();
+            signals.Add("country", "singapore");
+            signals.Add("region", "sg");
+            foreach (var key in keys)
+            {
+                expression = expression.Replace(key, signals[key]);
+            }
+            var evaluator = new ExpressionEvaluator();
+            Assert.True(evaluator.Evaluate<bool>(expression));
+        }
+
+        [Fact]
+        public void TestEvaluator()
+        {
+            var expression = "page_view>=5";
+            var signals = new Dictionary<string, string>();
+            signals.Add("page_view", "6");
+            var key = "page_view";
+            expression = expression.Replace(key, signals[key]);
+
+            var evaluator = new ExpressionEvaluator();
+            Assert.True(evaluator.Evaluate<bool>(expression));
         }
     }
 
     public class Validator
     {
-        public static Audience[] Qualify(IDictionary<string, string> signals, Audience[] audiences)
+
+        public static Audience[] Qualify(IDictionary<string, string> signals, Audience[] audiences, string[] booleanOperators, string[] operators)
         {
             var audienceSet = new HashSet<Audience>();
             foreach (var signal in signals)
@@ -44,8 +127,28 @@ namespace SegmentTester
                 var filteredAudiences = audiences.Where(a => a.AttributeKeys.Contains(signal.Key));
                 foreach (var audience in filteredAudiences)
                 {
-                    //skip expression evaluation for now
-                    audienceSet.Add(audience);
+                    var expression = audience.Expression;
+                    var split1 = expression.Split(booleanOperators, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var exp in split1)
+                    {
+                        var array = exp.Split(operators, StringSplitOptions.RemoveEmptyEntries);
+                        var key = array[0];
+                        var value = array[1];
+                        if (int.TryParse(value, out _))
+                        {
+                            expression = expression.SafeReplace(key, signals[key]);
+                        }
+                        else
+                        {
+                            expression = expression.SafeReplace(value, "\"" + value + "\"");
+                            expression = expression.SafeReplace(key, "\"" + signals[key] + "\"");
+                        }
+                    }
+                    var evaluator = new ExpressionEvaluator();
+                    if (evaluator.Evaluate<bool>(expression))
+                    {
+                        audienceSet.Add(audience);
+                    }
                 }
             }
             return audienceSet.ToArray();
@@ -60,7 +163,8 @@ namespace SegmentTester
         private readonly Random _random = new Random();
         private readonly string[] _textOperators;
         private readonly string[] _numberOperators;
-        private readonly string[] _booleanOperators = new[] { "&&", "||" };
+        public string[] Operators => _textOperators.Union(_numberOperators).ToArray();
+        public string[] BooleanOperators = new[] { "&&", "||" };
         private readonly string[] _attributeKeys;
         public IDictionary<string, IList<string>> KeyToTraitsMapping = new Dictionary<string, IList<string>>();
 
@@ -86,7 +190,7 @@ namespace SegmentTester
             return _sampleData.SampleSignals[_random.Next(_sampleAttributeUpLimit)];
         }
 
-        private (string expression,string attributeKey) GetRandomTrait()
+        private (string expression, string attributeKey) GetRandomTrait()
         {
             var attribute = GetRandomSignal();
             var valueIndex = _random.Next(attribute.Values.Length);
@@ -131,15 +235,16 @@ namespace SegmentTester
                 var audience = new Audience();
                 var traitsLimit = _random.Next(maximumTraits);
                 var sb = new StringBuilder();
+                var traitKeys = new List<string>();
                 for (var j = 0; j <= traitsLimit; j++)
                 {
                     var trait = GetRandomTrait();
+                    if (traitKeys.Contains(trait.attributeKey)) continue;
+
+                    traitKeys.Add(trait.attributeKey);
                     audience.AttributeKeys.Add(trait.attributeKey);
+                    if (j > 0) sb.Append(BooleanOperators[_random.Next(BooleanOperators.Length)]);
                     sb.Append(trait.expression);
-                    if (j < traitsLimit)
-                    {
-                        sb.Append(_booleanOperators[_random.Next(_booleanOperators.Length)]);
-                    }
                 }
                 audience.Expression = sb.ToString();
                 _audiences.Add(audience);
@@ -197,5 +302,14 @@ namespace SegmentTester
     {
         Text,
         Number
+    }
+
+    public static class StringExtensions
+    {
+        public static string SafeReplace(this string input, string find, string replace, bool matchWholeWord = true)
+        {
+            string textToFind = matchWholeWord ? string.Format(@"\b{0}\b", find) : find;
+            return Regex.Replace(input, textToFind, replace);
+        }
     }
 }
