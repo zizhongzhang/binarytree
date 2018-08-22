@@ -29,8 +29,9 @@ namespace sample.api.Controllers
 
         // POST api/values
         [HttpPost]
-        public void Post([FromBody] string value)
+        public IActionResult Post([FromBody] Lecture lecture)
         {
+            return Ok();
         }
 
         // PUT api/values/5

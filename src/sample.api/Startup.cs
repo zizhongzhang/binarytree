@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
+﻿using System.Net.Http;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace sample.api
 {
@@ -27,11 +22,24 @@ namespace sample.api
         public void ConfigureServices(IServiceCollection services)
         {
             var useDb = Configuration.GetValue<bool>("UseDb");
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+                    .AddFluentValidation();
 
             services.AddSingleton<HttpClient>();
             services.AddSingleton<GithubClient>();
+
+            services.AddTransient<IValidator<Lecture>, LectureValidator>();
             //services.AddHttpClient<GithutClient>();
+            services.AddHttpClient("configured-inner-handler")
+                    .ConfigurePrimaryHttpMessageHandler(() =>
+                    {
+                        return new HttpClientHandler()
+                        {
+                            UseCookies = false,
+                            AllowAutoRedirect = false,
+                            UseDefaultCredentials = true
+                        };
+                    });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
