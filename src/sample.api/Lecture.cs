@@ -1,14 +1,17 @@
 ﻿using FluentValidation;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace sample.api
 {
     public class Lecture
     {
+        [Required]
         public string Name { get; set; }
         public DateTime? LectureDate { get; set; }
     }
+
     public class LectureValidator : AbstractValidator<Lecture>
     {
         public LectureValidator()
@@ -27,8 +30,6 @@ namespace sample.api
         public PersonValidator()
         {
             RuleFor(x => x.Pets).Must(list => list.Count <= 10)
-              .WithMessage("The list must contain fewer than 10 items");
-            RuleFor(x => x.Pets).Custom((list, context) => context.)
               .WithMessage("The list must contain fewer than 10 items");
         }
     }
