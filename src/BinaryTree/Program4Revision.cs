@@ -11,8 +11,8 @@ namespace BinaryTree.Program4Revision
         {
             Console.WriteLine(0x2);
             ShuntingYardSimpleBoolean SY = new ShuntingYardSimpleBoolean();
-            //String s = "true;|;(;true;&;false;)";
-            String s = "true;|;true;&;false";
+            String s = "true;|;(;true;&;false;)";
+            //String s = "true;|;true;&;false";
             Console.WriteLine("input: {0}", s); Console.WriteLine();
             List<String> ss = s.Split(';').ToList();
             SY.DebugRPNSteps += new ShuntingYardBase<bool, string>.DebugRPNDelegate(SY_DebugRPNSteps);
